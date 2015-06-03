@@ -15,8 +15,8 @@ public class DialogUntil {
     Context context;
     Activity act;
 
-    final public int SELECT_PICTURE = 1;
-    final public int SELECT_CAMER = 0;
+    final public static int SELECT_PICTURE = 1;
+    final public static int SELECT_CAMER = 0;
 
     public DialogUntil(Activity context) {
         this.act = context;

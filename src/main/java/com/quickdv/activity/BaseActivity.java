@@ -89,12 +89,12 @@ public abstract class BaseActivity extends ActionBarActivity implements Activity
 
     @Override
     public void onErrorResponse(VolleyError error) {
-
+        dismissNetWorkDialog();
     }
 
     @Override
     public void onResponse(String tag, JSONObject result) {
-
+        dismissNetWorkDialog();
     }
 
     /**
@@ -109,11 +109,12 @@ public abstract class BaseActivity extends ActionBarActivity implements Activity
      * 添加网络请求队列
      * */
     protected void addToRequestQueue(int type,  String tag, String methods,JSONObject param){
-
         network.addToRequestQueue(type,tag,methods,param);
+
     }
 
     protected void startRequest(){
+        showNetWorkDialog();
         if(network !=null)
             network.start();
     }

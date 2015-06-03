@@ -1,7 +1,6 @@
 package com.quickdv.activity.adapter;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,7 +36,6 @@ public abstract class DataAdapter<T> extends BaseAdapter {
 
     @Override
     public int getCount() {
-        Log.v("this is getCount","这就是getCount");
         return data != null ? data.size() : 0;
     }
 

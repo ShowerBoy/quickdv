@@ -60,6 +60,7 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
             this.activity = activity;
             mListener = (OnFragmentInteractionListener) activity;
             help = new ActivityHelp(activity);
+            network = new HttpConnect(activity,this,this);
         } catch (ClassCastException e) {
             throw new ClassCastException(activity.toString()
                     + " must implement OnFragmentInteractionListener");
@@ -100,7 +101,7 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
      * */
     protected void addToRequestQueue(int type,  String tag, JSONObject param){
 
-        network.addToRequestQueue(type,tag,param);
+        addToRequestQueue(type,tag,tag,param);
     }
 
     /**
@@ -121,6 +122,7 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
     public void onErrorResponse(VolleyError error) {
         dismissNetWorkDialog();
         network.stopRequest();
+
     }
 
     @Override

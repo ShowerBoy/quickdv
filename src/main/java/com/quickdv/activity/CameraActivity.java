@@ -2,21 +2,20 @@ package com.quickdv.activity;
 
 import android.content.ContentResolver;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.widget.ImageView;
-import android.widget.Toast;
 
 import com.quickdv.activity.until.DialogUntil;
-import com.squareup.picasso.Picasso;
+import com.quickdv.activity.until.ImageTools;
 import com.squareup.picasso.Target;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 
 /**
  * Created by Administrator on 2015/6/1.
@@ -27,6 +26,12 @@ public abstract class CameraActivity extends BaseActivity {
     protected Target loadtarget;
     protected ImageView view;
     Bitmap bmp;
+
+
+    private static final int SCALE = 5;//照片缩小比例
+
+
+    final String path = "file://";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,51 +41,50 @@ public abstract class CameraActivity extends BaseActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if(resultCode == RESULT_OK){
-            //选择图片
-            Uri uri = data.getData();
-            ContentResolver cr = this.getContentResolver();
-            String[] filePathColumn = { MediaStore.Images.Media.DATA };
-            Cursor cursor =getContentResolver().query(uri,
-                    filePathColumn, null, null, null);//从系统表中查询指定Uri对应的照片
-            cursor.moveToFirst();
-            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-            String picturePath = cursor.getString(columnIndex);  //获取照片路径
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case DialogUntil.SELECT_CAMER:
+                    //将保存在本地的图片取出并缩小后显示在界面上
+                    Bitmap bitmap = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory()+"/image.jpg");
+                    Bitmap newBitmap = ImageTools.zoomBitmap(bitmap, bitmap.getWidth() / SCALE, bitmap.getHeight() / SCALE);
+                    //由于Bitmap内存占用较大，这里需要回收内存，否则会报out of memory异常
+                    bitmap.recycle();
+
+                    //将处理过的图片显示在界面上，并保存到本地
+//                    iv_image.setImageBitmap(newBitmap);
+                    String path= ImageTools.savePhotoToSDCard(newBitmap, Environment.getExternalStorageDirectory().getAbsolutePath(), String.valueOf(System.currentTimeMillis()));
+
+                    int route = ImageTools.readPictureDegree(path,this);
+                    newBitmap  = ImageTools.rotaingImageView(route,newBitmap);
+                    onImageSelect(newBitmap,path);
+                    break;
 
 
+                case DialogUntil.SELECT_PICTURE:
+                    ContentResolver resolver = getContentResolver();
+                    //照片的原始资源地址
+                    Uri originalUri = data.getData();
+                    try {
+                        //使用ContentProvider通过URI获取原始图片
+                        Bitmap photo = MediaStore.Images.Media.getBitmap(resolver, originalUri);
+                        if (photo != null) {
+                            //为防止原始图片过大导致内存溢出，这里先缩小原图显示，然后释放原始Bitmap占用的内存
+                            Bitmap smallBitmap = ImageTools.zoomBitmap(photo, photo.getWidth() / SCALE, photo.getHeight() / SCALE);
+                            //释放原始图片占用的内存，防止out of memory异常发生
+                            photo.recycle();
 
-            loadtarget =new Target() {
-                @Override
-                public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                    onImageSelect(bitmap,from);
-                }
+                            onImageSelect(smallBitmap, null);
+                        }
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    break;
 
-                @Override
-                public void onBitmapFailed(Drawable errorDrawable) {
-                }
-
-                @Override
-                public void onPrepareLoad(Drawable placeHolderDrawable) {
-                }
-            };
-            Picasso.with(this).load(picturePath).into(loadtarget);
-
-            try {
-                if(bmp != null)//如果不释放的话，不断取图片，将会内存不够
-                    bmp.recycle();
-
-                    bmp = BitmapFactory.decodeStream(cr.openInputStream(uri));
-
-
-            } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+                default:
+                    break;
             }
-            System.out.println("the bmp toString: " + bmp);
-//            imageSV.setBmp(bmp);
-
-        }else{
-            Toast.makeText(this, "请重新选择图片", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -91,5 +95,5 @@ public abstract class CameraActivity extends BaseActivity {
             bmp.recycle();
     }
 
-    protected abstract void onImageSelect(Bitmap bitmap,Picasso.LoadedFrom from);
+    protected abstract void onImageSelect(Bitmap bitmap,String path);
 }
