@@ -7,6 +7,8 @@ import com.android.volley.toolbox.ImageLoader;
 
 /**
  * Created by lilongfei on 15/4/9.
+ *
+ * 图片缓存处理方法
  */
 public class BitmapCache implements ImageLoader.ImageCache {
 

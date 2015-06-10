@@ -1,7 +1,10 @@
 package com.quickdv.activity.fragment;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -10,14 +13,21 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.android.volley.Request;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.quickdv.activity.bean.ActivityHelp;
+import com.quickdv.R;
+import com.quickdv.activity.helper.ActivityHelp;
 import com.quickdv.activity.imp.BaseImp;
 import com.quickdv.activity.network.HttpConnect;
 import com.quickdv.activity.network.SucceesInter;
+import com.quickdv.activity.until.LogHelper;
 
+import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -46,6 +56,10 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
     protected HttpConnect network;
     protected ProgressDialog dialog;
 
+    protected LogHelper log;
+
+    public boolean firstLoad = true;
+
     // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
@@ -53,9 +67,12 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
         }
     }
 
+
+
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
+        log = LogHelper.getInstance();
         try {
             this.activity = activity;
             mListener = (OnFragmentInteractionListener) activity;
@@ -74,6 +91,8 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
         }
+
+        initData();
         return root;
     }
 
@@ -86,7 +105,8 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
     public void showNetWorkDialog() {
         if (dialog == null){
             dialog = new ProgressDialog(activity);
-            dialog.setTitle("获取网络数据中");
+            dialog.setTitle(getResources().getString(R.string.network_title));
+            dialog.setMessage(getResources().getString(R.string.network_message));
         }
         dialog.show();
     }
@@ -96,20 +116,45 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
             dialog.dismiss();
     }
 
+
+    public AlertDialog buildErro(){
+        AlertDialog dialog_error = new AlertDialog.Builder(activity).setMessage(getResources().getString(R.string.network_error))
+                .setNegativeButton("确定",new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                            initData();
+                    }
+                }).setCancelable(false).create();
+        return dialog_error;
+    }
     /**
      * 添加网络请求队列
-     * */
-    protected void addToRequestQueue(int type,  String tag, JSONObject param){
+     */
+    protected void addToRequestQueue(int type, String methods, Map<String, Object> param) {
 
-        addToRequestQueue(type,tag,tag,param);
+        addToRequestQueue(type, methods, methods, param);
     }
 
     /**
      * 添加网络请求队列
-     * */
-    protected void addToRequestQueue(int type,  String tag, String methods,JSONObject param){
+     */
+    protected void addToRequestQueue(int type, Object tag, String methods, Map<String, Object> param) {
+        if (type == Request.Method.GET && param != null) {
+            methods = methods + "/?";
+            Iterator<Map.Entry<String, Object>> iterator = param.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Map.Entry<String, Object> entity = iterator.next();
+                methods += entity.getKey() + "=" + entity.getValue() + "&";
+            }
+            if (methods.endsWith("&"))
+                methods = methods.substring(0, methods.length() - 1);
+            network.addToRequestQueue(type, tag, methods, null);
 
-        network.addToRequestQueue(type,tag,methods,param);
+        } else if (param != null)
+            network.addToRequestQueue(type, tag, methods, new JSONObject(param));
+        else
+            network.addToRequestQueue(type, tag, methods, null);
+
     }
 
     protected void startRequest(){
@@ -122,12 +167,21 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
     public void onErrorResponse(VolleyError error) {
         dismissNetWorkDialog();
         network.stopRequest();
-
+        AlertDialog dialog_error = buildErro();
+        dialog_error.show();
     }
 
     @Override
-    public void onResponse(String tag, JSONObject result) {
-        dismissNetWorkDialog();
+    public void onResponse(Object tag, JSONObject result) {
+        try {
+            isOk(activity,result);
+        } catch (JSONException e) {
+            dismissNetWorkDialog();
+            network.stopRequest();
+            AlertDialog dialog_error = buildErro();
+            dialog_error.show();
+        }
+
     }
 
     public View getRootView(){
@@ -167,7 +221,13 @@ public abstract class BaseFragment extends Fragment implements BaseImp,Response.
         help.startActivity(action,bundle);
     }
 
+    public boolean isOk(Context context ,JSONObject obj) throws JSONException {return help.isOk(context,obj);}
+
     protected abstract void initView();
 
     protected abstract int getLayoutViewID();
+
+    protected void initData() {
+
+    }
 }

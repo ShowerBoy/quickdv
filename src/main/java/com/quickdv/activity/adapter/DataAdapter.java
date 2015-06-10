@@ -14,6 +14,7 @@ import com.android.volley.toolbox.Volley;
 import com.quickdv.R;
 import com.quickdv.activity.until.BitmapCache;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -70,6 +71,16 @@ public abstract class DataAdapter<T> extends BaseAdapter {
     public void append(T data) {
         this.data.add(data);
         this.notifyDataSetChanged();
+    }
+
+    public void appendAll(Collection<T> data)
+    {
+        this.data.addAll(data);
+        this.notifyDataSetChanged();
+    }
+
+    public void appendAll(int index,Collection<T> data){
+        if(index < 0) return;
     }
 
     public void replace(T data) {

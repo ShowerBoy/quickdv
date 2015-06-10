@@ -9,4 +9,6 @@ public interface ActivityImp {
     void initView();
     void initActionbar();
     View customActionBar();
+    void initData();
+
 }
