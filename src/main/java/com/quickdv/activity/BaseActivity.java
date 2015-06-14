@@ -167,6 +167,11 @@ public abstract class BaseActivity extends ActionBarActivity implements Activity
             network.start();
     }
 
+    protected  void startRequestNotDialog(){
+        if (network != null)
+            network.start();
+    }
+
 
     @Override
     public void startActivity(String action) {
